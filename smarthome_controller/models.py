@@ -22,14 +22,14 @@ class ControllerCapability(models.Model):
 
 class SmartHomeController(models.Model):
     unique_id = models.CharField(max_length=1024)
-    first_registered = models.DateTimeField(auto_created=True)
+    first_registered = models.DateTimeField(auto_now=True)
     type = models.IntegerField(choices=TYPES)
     capabilities = models.ManyToManyField(ControllerCapability)
 
 
 class ControllerPing(models.Model):
     controller = models.ForeignKey(SmartHomeController)
-    time = models.DateTimeField(auto_created=True)
+    time = models.DateTimeField(auto_now=True)
 
 
 class ControllerTask(models.Model):
