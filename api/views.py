@@ -3,10 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from serializers import ControllerPingSerializer
 from rest_framework import status
-
-
 __author__ = 'dmarkey'
-
 
 class ControllerPingCreate(APIView):
     def post(self, request, format=None):
