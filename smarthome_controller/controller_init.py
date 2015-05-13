@@ -1,10 +1,10 @@
 __author__ = 'dmarkey'
-from models import *
 
 
 def make_sockets(controller, number_of_sockets=4):
-
-    pass
+    from models import Socket
+    for i in xrange(1, number_of_sockets + 1):
+        Socket(controller=controller, number=i).save()
 
 
 CONTROLLER_INIT_MAP = {"Init Sockets": make_sockets}

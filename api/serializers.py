@@ -13,7 +13,7 @@ class ControllerPingSerializer(serializers.Serializer):
         pass
 
     def create(self, validated_data):
-        model = ControllerModel.get(name=validated_data.get("model"))
+        model = ControllerModel.objects.get(name=validated_data.get("model"))
         controller, _ = SmartHomeController.objects.get_or_create(unique_id=validated_data.get("controller_id"),
                                                                   model=model)
         cp = ControllerPing()

@@ -44,7 +44,6 @@ class ControllerCapability(models.Model):
         from controller_init import CONTROLLER_INIT_MAP
         return CONTROLLER_INIT_MAP[self.init_function]
 
-
     def init(self, controller):
         self.get_init_function()(controller, **json.loads(self.init_arguments))
 
@@ -77,10 +76,8 @@ class SmartHomeController(models.Model):
             ret = super(SmartHomeController, self).save(*args, **kwargs)
         return ret
 
-
-
     def get_topic_name(self):
-        return "/smart_plug_work/SmartPlug-%d" % self.unique_id
+        return "/smart_plug_work/SmartPlug-%s" % self.unique_id
 
     def __unicode__(self):
         return self.unique_id
@@ -94,7 +91,7 @@ class ControllerTask(models.Model):
     task_id = models.UUIDField(primary_key=True, default=uuid.uuid4)
     controller = models.ForeignKey(SmartHomeController)
     description = models.CharField(max_length=4096)
-    capability = models.ForeignKey(ControllerCapability)
+    name = models.CharField(max_length=1024)
     arguments = models.CharField(max_length=1024)
     creation_time = models.DateTimeField(auto_now=True)
 
@@ -108,10 +105,9 @@ class ControllerTask(models.Model):
             raise ValidationError("Needs to be valid JSON")
 
     def _get_payload(self):
-        message = {}
-        message['capability'] = self.capability.name
-        message['arguments'] = self.arguments
-        message['task_id'] = self.task_id
+        message = json.loads(self.arguments)
+        message['name'] = self.name
+        message['task_id'] = str(self.task_id)
         return json.dumps(message)
 
 
@@ -126,7 +122,24 @@ class ControllerTask(models.Model):
 class Socket(models.Model):
     controller = models.ForeignKey(SmartHomeController)
     number = models.SmallIntegerField()
-    state = models.NullBooleanField()
+    state = models.NullBooleanField(default=None)
+    human_name = models.TextField()
+
+    def toggle(self):
+        task = ControllerTask(controller=self.controller)
+        task.description = "Toggle Socket"
+        newstate = not self.state
+        task.arguments = json.dumps({"socketnumber": self.number, "state": newstate})
+        task.name = "sockettoggle"
+        task.save()
+        task.send_task()
+        self.state = newstate
+        self.save()
+
+
+
+
+
 
 
 
