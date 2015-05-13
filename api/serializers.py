@@ -1,22 +1,21 @@
 from rest_framework import serializers
-from smarthome_controller.models import SmartHomeController, ControllerPing, TYPES
+from smarthome_controller.models import SmartHomeController, ControllerPing, ControllerModel
 
 __author__ = 'dmarkey'
 
 
 class ControllerPingSerializer(serializers.Serializer):
 
-
     controller_id = serializers.CharField(max_length=1024)
-    type = serializers.ChoiceField(choices=TYPES)
-
+    model = serializers.CharField(max_length=1024)
 
     def update(self, instance, validated_data):
         pass
 
     def create(self, validated_data):
+        model = ControllerModel.get(name=validated_data.get("model"))
         controller, _ = SmartHomeController.objects.get_or_create(unique_id=validated_data.get("controller_id"),
-                                                                  type=validated_data.get("type"))
+                                                                  model=model)
         cp = ControllerPing()
         cp.controller = controller
         cp.save()
