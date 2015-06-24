@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.db import models
 import json
-import paho.mqtt.publish as publish
+from mqtt_conn import client
 # Create your models here.
 import inspect
 import uuid
@@ -10,7 +10,7 @@ STATUSES = (
     (0, "CREATED"),
     (1, "SENT"),
     (2, "ACKNOWLEDGED"),
-    (2, "COMPLETE"),
+    (3, "COMPLETE"),
 
 )
 
@@ -82,6 +82,7 @@ class SmartHomeController(models.Model):
     def __unicode__(self):
         return self.unique_id
 
+
 class ControllerPing(models.Model):
     controller = models.ForeignKey(SmartHomeController)
     time = models.DateTimeField(auto_now=True)
@@ -110,10 +111,9 @@ class ControllerTask(models.Model):
         message['task_id'] = str(self.task_id)
         return json.dumps(message)
 
-
     def send_task(self):
         topic = self.controller.get_topic_name()
-        publish.single(topic, self._get_payload(), hostname="dmarkey.com", port=8000)
+        client.publish(topic, self._get_payload(), qos=2)
 
     def __unicode__(self):
         return str(self.task_id)
@@ -135,7 +135,6 @@ class Socket(models.Model):
         task.send_task()
         self.state = newstate
         self.save()
-
 
 
 
