@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
 import json
@@ -16,36 +17,39 @@ STATUSES = (
 
 
 def init_choices():
-    from controller_init import CONTROLLER_INIT_MAP
+    from control_classes import CONTROL_CLASSES
     choices = []
-    for key, _ in CONTROLLER_INIT_MAP.iteritems():
+    for key, _ in CONTROL_CLASSES.iteritems():
         choices.append([key, key])
     return choices
 
 
 class ControllerCapability(models.Model):
     name = models.CharField(max_length=1024)
-    init_function = models.CharField(choices=init_choices(), max_length=1024)
+    control_class = models.CharField(choices=init_choices(), max_length=1024)
     init_arguments = models.CharField(max_length=4096)
     description = models.TextField()
 
     def clean(self):
         try:
             obj = json.loads(self.init_arguments)
-            func = self.get_init_function()
-            args = inspect.getargspec(func)[0]
+            cls = self.get_control_class()
+            args = inspect.getargspec(cls.init)[0]
             for k in obj.keys():
                 if k not in args:
                     raise ValidationError(str(args) + " args are valid")
         except ValueError:
             raise ValidationError("Needs to be valid JSON")
 
-    def get_init_function(self):
-        from controller_init import CONTROLLER_INIT_MAP
-        return CONTROLLER_INIT_MAP[self.init_function]
+    def get_control_class(self):
+        from control_classes import CONTROL_CLASSES
+        return CONTROL_CLASSES[self.control_class]
 
     def init(self, controller):
-        self.get_init_function()(controller, **json.loads(self.init_arguments))
+        self.get_control_class().init(controller, **json.loads(self.init_arguments))
+
+    def incoming_beacon(self, controller):
+        self.get_control_class().on_beacon(controller)
 
     def __unicode__(self):
         return self.name
@@ -64,9 +68,11 @@ class ControllerModel(models.Model):
 
 
 class SmartHomeController(models.Model):
+    name = models.CharField(max_length=1024)
     unique_id = models.CharField(max_length=1024)
     first_registered = models.DateTimeField(auto_now=True)
     model = models.ForeignKey("ControllerModel")
+    owner = models.ForeignKey(User, null=True, blank=True)
 
     def save(self, *args, **kwargs):
         if not self.pk:
@@ -86,6 +92,7 @@ class SmartHomeController(models.Model):
 class ControllerPing(models.Model):
     controller = models.ForeignKey(SmartHomeController)
     time = models.DateTimeField(auto_now=True)
+    ip = models.GenericIPAddressField()
 
 
 class ControllerTask(models.Model):
@@ -95,7 +102,6 @@ class ControllerTask(models.Model):
     name = models.CharField(max_length=1024)
     arguments = models.CharField(max_length=1024)
     creation_time = models.DateTimeField(auto_now=True)
-
     status = models.SmallIntegerField(default=0, choices=STATUSES)
 
     def clean(self):
@@ -122,19 +128,33 @@ class ControllerTask(models.Model):
 class Socket(models.Model):
     controller = models.ForeignKey(SmartHomeController)
     number = models.SmallIntegerField()
-    state = models.NullBooleanField(default=None)
+    state = models.BooleanField(default=False)
     human_name = models.TextField()
 
-    def toggle(self):
+    def __unicode__(self):
+        if self.human_name:
+            return self.human_name + str(self.controller)
+
+        return str(self.number) + str(self.controller)
+
+    def send_state(self, toggle=False):
         task = ControllerTask(controller=self.controller)
         task.description = "Toggle Socket"
-        newstate = not self.state
+        if toggle:
+            newstate = not self.state
+        else:
+            newstate = self.state
         task.arguments = json.dumps({"socketnumber": self.number, "state": newstate})
         task.name = "sockettoggle"
         task.save()
         task.send_task()
         self.state = newstate
         self.save()
+
+    def toggle(self):
+        self.send_state(True)
+
+
 
 
 

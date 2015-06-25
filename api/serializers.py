@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from smarthome_controller.models import SmartHomeController, ControllerPing, ControllerModel
+from smarthome_admin.models import SmartHomeController, ControllerPing, ControllerModel
 
 __author__ = 'dmarkey'
 
@@ -8,6 +8,7 @@ class ControllerPingSerializer(serializers.Serializer):
 
     controller_id = serializers.CharField(max_length=1024)
     model = serializers.CharField(max_length=1024)
+    ip = serializers.CharField(max_length=1024)
 
     def update(self, instance, validated_data):
         pass
@@ -18,6 +19,7 @@ class ControllerPingSerializer(serializers.Serializer):
                                                                   model=model)
         cp = ControllerPing()
         cp.controller = controller
+        cp.ip = validated_data['ip']
         cp.save()
 
         return validated_data
