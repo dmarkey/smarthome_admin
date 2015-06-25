@@ -86,7 +86,10 @@ class SmartHomeController(models.Model):
         return "/smart_plug_work/SmartPlug-%s" % self.unique_id
 
     def __unicode__(self):
-        return self.unique_id
+        if self.name:
+            return self.name
+        else:
+            return self.unique_id
 
 
 class ControllerPing(models.Model):
