@@ -154,3 +154,6 @@ LOGGING = {
         },
     }
 }
+
+
+SESSION_COOKIE_HTTPONLY = False
