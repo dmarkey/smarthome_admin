@@ -1,6 +1,6 @@
 __author__ = 'dmarkey'
 from django.contrib import admin
-from models import SmartHomeController, ControllerPing, ControllerTask, ControllerCapability, ControllerModel, Socket
+from .models import SmartHomeController, ControllerPing, ControllerTask, ControllerCapability, ControllerModel, Socket
 
 
 class SmartHomeControllerAdmin(admin.ModelAdmin):
@@ -33,4 +33,3 @@ admin.site.register(ControllerCapability)
 admin.site.register(ControllerPing, PingAdmin)
 admin.site.register(ControllerModel)
 admin.site.register(Socket, SocketAdmin)
-

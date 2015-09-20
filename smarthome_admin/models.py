@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
 import json
-from mqtt_conn import client
+from .mqtt_conn import client
 # Create your models here.
 import inspect
 import uuid
@@ -17,9 +17,9 @@ STATUSES = (
 
 
 def init_choices():
-    from control_classes import CONTROL_CLASSES
+    from .control_classes import CONTROL_CLASSES
     choices = []
-    for key, _ in CONTROL_CLASSES.iteritems():
+    for key, _ in CONTROL_CLASSES.items():
         choices.append([key, key])
     return choices
 
@@ -42,7 +42,7 @@ class ControllerCapability(models.Model):
             raise ValidationError("Needs to be valid JSON")
 
     def get_control_class(self):
-        from control_classes import CONTROL_CLASSES
+        from .control_classes import CONTROL_CLASSES
         return CONTROL_CLASSES[self.control_class]
 
     def init(self, controller):
@@ -140,33 +140,22 @@ class Socket(models.Model):
 
         return str(self.number) + str(self.controller)
 
-    def send_state(self, toggle=False):
+    def send_state(self):
         task = ControllerTask(controller=self.controller)
         task.description = "Toggle Socket"
-        if toggle:
-            newstate = not self.state
-        else:
-            newstate = self.state
-        task.arguments = json.dumps({"socketnumber": self.number, "state": newstate})
+        task.arguments = json.dumps({"socketnumber": self.number, "state": self.state})
         task.name = "sockettoggle"
         task.save()
         task.send_task()
-        self.state = newstate
-        self.save()
+
+    def save(self, *args, **kwargs):
+        tmp = super(Socket, self).save(*args, **kwargs)
+        self.send_state()
+        return tmp
 
     def toggle(self):
-        self.send_state(True)
-
-
-
-
-
-
-
-
-
-
-
+        self.state = not self.state;
+        self.save()
 
 
 
