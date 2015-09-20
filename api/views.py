@@ -1,3 +1,4 @@
+from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -37,5 +38,8 @@ class SocketViewSet(viewsets.ModelViewSet):
     queryset = Socket.objects.all()
     serializer_class = SocketSerializer
 
+    @ensure_csrf_cookie
+    def list(self, request, *args, **kwargs):
+        return super(SocketViewSet, self).list(request, *args, **kwargs)
 
 router.register(r'sockets', SocketViewSet)
