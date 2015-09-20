@@ -13,14 +13,14 @@ def on_connect(client, userdata, flags, rc):
 
 
 def task_status(msg):
-    obj = json.loads(msg.payload)
-    from models import ControllerTask
+    obj = json.loads(msg.payload.decode("utf-8"))
+    from .models import ControllerTask
     ControllerTask.objects.filter(task_id=obj['task_id']).update(status=obj['status'])
 
 
 def incoming_beacon(msg):
-    from models import SmartHomeController
-    obj = json.loads(msg.payload)
+    from .models import SmartHomeController
+    obj = json.loads(msg.payload.decode("utf-8"))
     controller_id = obj['controller_id']
     controller = SmartHomeController.objects.get(unique_id=controller_id)
     for cap in controller.model.capabilities.all():
