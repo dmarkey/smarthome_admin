@@ -1,9 +1,13 @@
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from serializers import ControllerPingSerializer
+from rest_framework import routers
+from .serializers import ControllerPingSerializer, SocketSerializer
 from rest_framework import status
+from smarthome_admin.models import Socket
+
 __author__ = 'dmarkey'
+
 
 def get_client_ip(request):
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -13,6 +17,7 @@ def get_client_ip(request):
         ip = request.META.get('REMOTE_ADDR')
     return ip
 
+
 class ControllerPingCreate(APIView):
     def post(self, request, format=None):
         request.data['ip'] = get_client_ip(request)
@@ -21,3 +26,16 @@ class ControllerPingCreate(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+router = routers.DefaultRouter()
+
+
+class SocketViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows groups to be viewed or edited.
+    """
+    queryset = Socket.objects.all()
+    serializer_class = SocketSerializer
+
+
+router.register(r'sockets', SocketViewSet)

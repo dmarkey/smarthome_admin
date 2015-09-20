@@ -1,7 +1,15 @@
 from rest_framework import serializers
-from smarthome_admin.models import SmartHomeController, ControllerPing, ControllerModel
+from smarthome_admin.models import SmartHomeController, ControllerPing, ControllerModel, Socket
 
 __author__ = 'dmarkey'
+
+
+class SocketSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Socket
+        fields = ("id", 'state', 'human_name')
+
 
 
 class ControllerPingSerializer(serializers.Serializer):
