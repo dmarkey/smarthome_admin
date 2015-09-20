@@ -1,3 +1,4 @@
+from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import viewsets
 from rest_framework.response import Response
@@ -38,7 +39,7 @@ class SocketViewSet(viewsets.ModelViewSet):
     queryset = Socket.objects.all()
     serializer_class = SocketSerializer
 
-    @ensure_csrf_cookie
+    @method_decorator(ensure_csrf_cookie)
     def list(self, request, *args, **kwargs):
         return super(SocketViewSet, self).list(request, *args, **kwargs)
 
