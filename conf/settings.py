@@ -123,7 +123,8 @@ INSTALLED_APPS = (
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
     'smarthome_admin',
-    'rest_framework'
+    'rest_framework',
+    'rest_framework.authtoken'
 )
 
 # A sample logging configuration. The only tangible logging

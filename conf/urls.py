@@ -16,4 +16,12 @@ urlpatterns = patterns('',
     url(r'^admin/', include(admin.site.urls)),
     url(r'^controller_ping_create/$', views.ControllerPingCreate.as_view()),
     url(r'^api/', include(views.router.urls)),
+
 )
+
+
+from rest_framework.authtoken import views
+urlpatterns += [
+    url(r'^api-token-auth/', views.obtain_auth_token)
+]
+
