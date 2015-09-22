@@ -51,7 +51,7 @@ class ControllerCapability(models.Model):
     def incoming_beacon(self, controller):
         self.get_control_class().on_beacon(controller)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
 
@@ -63,7 +63,7 @@ class ControllerModel(models.Model):
         for cap in self.capabilities.all():
             cap.init(controller)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
 
@@ -72,7 +72,9 @@ class SmartHomeController(models.Model):
     unique_id = models.CharField(max_length=1024)
     first_registered = models.DateTimeField(auto_now=True)
     model = models.ForeignKey("ControllerModel")
-    owner = models.ForeignKey(User, null=True, blank=True)
+    admin = models.ForeignKey(User, null=True, blank=True)
+    users = models.ManyToManyField(User, related_name="controller_users", blank=True)
+    human_name = models.TextField(default="No name")
 
     def save(self, *args, **kwargs):
         if not self.pk:
@@ -85,7 +87,7 @@ class SmartHomeController(models.Model):
     def get_topic_name(self):
         return "/smart_plug_work/SmartPlug-%s" % self.unique_id
 
-    def __unicode__(self):
+    def __str__(self):
         if self.name:
             return self.name
         else:
@@ -124,7 +126,7 @@ class ControllerTask(models.Model):
         topic = self.controller.get_topic_name()
         client.publish(topic, self._get_payload(), qos=2)
 
-    def __unicode__(self):
+    def __str__(self):
         return str(self.task_id)
 
 
@@ -133,8 +135,10 @@ class Socket(models.Model):
     number = models.SmallIntegerField()
     state = models.BooleanField(default=False)
     human_name = models.TextField()
+    admin = models.ForeignKey(User, null=True, blank=True)
+    users = models.ManyToManyField(User, related_name="socket_users", blank=True)
 
-    def __unicode__(self):
+    def __str__(self):
         if self.human_name:
             return self.human_name + str(self.controller)
 

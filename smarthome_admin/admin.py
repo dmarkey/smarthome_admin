@@ -4,7 +4,7 @@ from .models import SmartHomeController, ControllerPing, ControllerTask, Control
 
 
 class SmartHomeControllerAdmin(admin.ModelAdmin):
-    list_display = ('unique_id', 'first_registered', 'model', 'name', 'owner')
+    list_display = ('unique_id', 'first_registered', 'model', 'name')
 
 
 class PingAdmin(admin.ModelAdmin):

@@ -11,6 +11,13 @@ class SocketSerializer(serializers.ModelSerializer):
         fields = ("id", 'state', 'human_name')
 
 
+class ControllerSerializer(serializers.ModelSerializer):
+    model = serializers.StringRelatedField()
+
+    class Meta:
+        model = SmartHomeController
+        fields = ("id", 'model', 'human_name')
+
 
 class ControllerPingSerializer(serializers.Serializer):
 

@@ -4,9 +4,11 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import routers
-from .serializers import ControllerPingSerializer, SocketSerializer
+from rest_framework.authentication import TokenAuthentication, SessionAuthentication
+from rest_framework.permissions import IsAuthenticated
+from .serializers import ControllerPingSerializer, SocketSerializer, ControllerSerializer
 from rest_framework import status
-from smarthome_admin.models import Socket
+from smarthome_admin.models import Socket, SmartHomeController
 
 __author__ = 'dmarkey'
 
@@ -36,6 +38,8 @@ class SocketViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows groups to be viewed or edited.
     """
+    authentication_classes = (SessionAuthentication, TokenAuthentication)
+    permission_classes = (IsAuthenticated, )
     queryset = Socket.objects.all()
     serializer_class = SocketSerializer
 
@@ -43,4 +47,30 @@ class SocketViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         return super(SocketViewSet, self).list(request, *args, **kwargs)
 
+
+class ControllerViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows groups to be viewed or edited.
+    """
+    authentication_classes = (SessionAuthentication, TokenAuthentication)
+    permission_classes = (IsAuthenticated, )
+    queryset = SmartHomeController.objects.all()
+    serializer_class = ControllerSerializer
+
+
+class UnClaimedControllerViewSet(ControllerViewSet):
+    permission_classes = (IsAuthenticated, )
+    def get_queryset(self):
+        qs = super(UnClaimedControllerViewSet, self).get_queryset()
+        return qs.filter(controllerping__ip=get_client_ip(self.request), admin=None)
+
+
+class MyControllerViewSet(ControllerViewSet):
+    permission_classes = (IsAuthenticated, )
+    def get_queryset(self):
+        qs = super(MyControllerViewSet, self).get_queryset()
+        return qs.filter(users=self.request.user)
+
 router.register(r'sockets', SocketViewSet)
+router.register(r'unclaimed_controllers', UnClaimedControllerViewSet)
+router.register(r'my_controllers', UnClaimedControllerViewSet)
