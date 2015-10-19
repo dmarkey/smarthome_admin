@@ -84,6 +84,12 @@ class SmartHomeController(models.Model):
             ret = super(SmartHomeController, self).save(*args, **kwargs)
         return ret
 
+    def capabilities(self):
+        return self.model.capabilities.all().values()
+
+    def sockets(self):
+        return self.socket_set.all().values()
+
     def get_topic_name(self):
         return "/smart_plug_work/SmartPlug-%s" % self.unique_id
 

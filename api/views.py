@@ -45,6 +45,10 @@ class SocketViewSet(viewsets.ModelViewSet):
     queryset = Socket.objects.all()
     serializer_class = SocketSerializer
 
+    def get_queryset(self):
+        qs = super(SocketViewSet, self).get_queryset()
+        return qs.filter(Q(users=self.request.user) | Q(admin=self.request.user))
+
     @method_decorator(ensure_csrf_cookie)
     def list(self, request, *args, **kwargs):
         return super(SocketViewSet, self).list(request, *args, **kwargs)
@@ -84,6 +88,12 @@ class MyControllerViewSet(ControllerViewSet):
         qs = super(MyControllerViewSet, self).get_queryset()
         return qs.filter(Q(users=self.request.user) | Q(admin=self.request.user))
 
-router.register(r'sockets', SocketViewSet)
+    """@detail_route(methods=['get'])
+    def detail(self, request, pk=None):
+        controller = self.get_object()
+        sockets = controller.socket_set.all()
+        return Response(SocketSerializer(sockets).data)"""
+
+router.register(r'sockets', SocketViewSet, base_name="sockets")
 router.register(r'unclaimed_controllers', UnClaimedControllerViewSet)
 router.register(r'my_controllers', MyControllerViewSet)
