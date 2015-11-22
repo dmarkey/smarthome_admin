@@ -6,6 +6,7 @@ from .mqtt_conn import client
 # Create your models here.
 import inspect
 import uuid
+import threading
 
 STATUSES = (
     (0, "CREATED"),
@@ -29,15 +30,17 @@ class ControllerCapability(models.Model):
     control_class = models.CharField(choices=init_choices(), max_length=1024)
     init_arguments = models.CharField(max_length=4096)
     description = models.TextField()
+    route_name = models.CharField(max_length=128)
 
     def clean(self):
         try:
             obj = json.loads(self.init_arguments)
             cls = self.get_control_class()
-            args = inspect.getargspec(cls.init)[0]
+            sig = list(dict(inspect.signature(cls.init).parameters).keys())
+            sig.remove("controller")
             for k in obj.keys():
-                if k not in args:
-                    raise ValidationError(str(args) + " args are valid")
+                if k not in sig:
+                    raise ValidationError(str(sig) + " args are valid")
         except ValueError:
             raise ValidationError("Needs to be valid JSON")
 
@@ -48,8 +51,8 @@ class ControllerCapability(models.Model):
     def init(self, controller):
         self.get_control_class().init(controller, **json.loads(self.init_arguments))
 
-    def incoming_beacon(self, controller):
-        self.get_control_class().on_beacon(controller)
+    def event(self, controller, event):
+        self.get_control_class().event(controller, event)
 
     def __str__(self):
         return self.name
@@ -75,6 +78,15 @@ class SmartHomeController(models.Model):
     admin = models.ForeignKey(User, null=True, blank=True)
     users = models.ManyToManyField(User, related_name="controller_users", blank=True)
     human_name = models.TextField(default="No name")
+
+    def queue_next_task(self):
+        if not ControllerTask.objects.filter(status=1, controller=self):
+            pending = ControllerTask.objects.filter(status=0, controller=self)
+            if pending:
+                pending[0].send_task()
+
+    def clear_tasks(self):
+        ControllerTask.objects.filter(controller=self).delete()
 
     def save(self, *args, **kwargs):
         if not self.pk:
@@ -131,6 +143,15 @@ class ControllerTask(models.Model):
     def send_task(self):
         topic = self.controller.get_topic_name()
         client.publish(topic, self._get_payload(), qos=2)
+        self.status = 1
+        self.save()
+
+    def save(self, *args, **kwargs):
+
+        ret_temp = super(ControllerTask, self).save(*args, **kwargs)
+        if self.status == 0:
+            self.controller.queue_next_task()
+        return ret_temp
 
     def __str__(self):
         return str(self.task_id)
@@ -156,20 +177,57 @@ class Socket(models.Model):
         task.arguments = json.dumps({"socketnumber": self.number, "state": self.state})
         task.name = "sockettoggle"
         task.save()
-        task.send_task()
+        #task.send_task()
 
     def save(self, *args, **kwargs):
+        if self.pk:
+            self.send_state()
+
         tmp = super(Socket, self).save(*args, **kwargs)
-        self.send_state()
         return tmp
 
     def toggle(self):
-        self.state = not self.state;
+        self.state = not self.state
         self.save()
 
 
+class SocketControl(models.Model):
+    socket = models.ForeignKey(Socket)
+    action = models.SmallIntegerField(default=0)
+    timer = models.IntegerField(default=0)
+
+    def execute(self):
+        if self.action == 0 and self.socket.state is True:
+            self.socket.state = False
+            self.socket.save()
+        elif self.action == 1 and self.socket.state is False:
+            self.socket.state = True
+            self.socket.save()
+        elif self.action == 2:
+            self.socket.toggle()
+        if self.timer != 0:
+            threading.Timer(self.timer, self.reverse).start()
+
+    def reverse(self):
+        self.socket.toggle()
 
 
+class TemperatureRecord(models.Model):
+    controller = models.ForeignKey(SmartHomeController)
+    temperature = models.FloatField()
+    time = models.DateTimeField(auto_now_add=True)
 
+
+class RemoteEvent(models.Model):
+    controller = models.ForeignKey(SmartHomeController)
+    encoding = models.CharField(max_length=256)
+    value = models.IntegerField()
+    time = models.DateTimeField(auto_now_add=True)
+
+
+class RegisteredRemoteEvent(SocketControl):
+    encoding = models.CharField(max_length=256)
+    value = models.IntegerField()
+    time = models.DateTimeField(auto_now_add=True)
 
 

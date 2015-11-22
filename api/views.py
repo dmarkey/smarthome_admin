@@ -26,10 +26,14 @@ def get_client_ip(request):
 
 class ControllerPingCreate(APIView):
     def post(self, request, format=None):
-        request.data['ip'] = get_client_ip(request)
-        serializer = ControllerPingSerializer(data=request.data)
+        data = request.data.copy()
+        data['ip'] = get_client_ip(request)
+
+        serializer = ControllerPingSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
+            from smarthome_admin.mqtt_conn import start_pub
+            start_pub()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -73,7 +77,6 @@ class UnClaimedControllerViewSet(ControllerViewSet):
 
     @detail_route(methods=['post'])
     def claim(self, request, pk=None):
-
         controller = self.get_object()
         controller.admin = request.user
         controller.human_name = request.data['human_name']

@@ -1,7 +1,7 @@
-__author__ = 'dmarkey'
 from django.contrib import admin
-from .models import SmartHomeController, ControllerPing, ControllerTask, ControllerCapability, ControllerModel, Socket
-
+from .models import SmartHomeController, ControllerPing, ControllerTask, RemoteEvent, ControllerCapability, \
+    ControllerModel, Socket, TemperatureRecord, RegisteredRemoteEvent
+__author__ = 'dmarkey'
 
 class SmartHomeControllerAdmin(admin.ModelAdmin):
     list_display = ('unique_id', 'first_registered', 'model', 'name')
@@ -27,9 +27,23 @@ class TaskAdmin(admin.ModelAdmin):
     list_display = ['task_id', 'controller', 'status']
 
 
+class TemperatureAdmin(admin.ModelAdmin):
+    list_display = ['controller', 'temperature', "time"]
+
+
+class RemoteEventAdmin(admin.ModelAdmin):
+    list_display = ['controller', 'encoding', "value"]
+
+
+class RegisteredRemoteEventAdmin(admin.ModelAdmin):
+    list_display = ['socket', 'encoding', "value"]
+
 admin.site.register(SmartHomeController, SmartHomeControllerAdmin)
 admin.site.register(ControllerTask, TaskAdmin)
 admin.site.register(ControllerCapability)
 admin.site.register(ControllerPing, PingAdmin)
 admin.site.register(ControllerModel)
+admin.site.register(TemperatureRecord, TemperatureAdmin)
 admin.site.register(Socket, SocketAdmin)
+admin.site.register(RemoteEvent, RemoteEventAdmin)
+admin.site.register(RegisteredRemoteEvent, RegisteredRemoteEventAdmin)
