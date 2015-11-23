@@ -1,3 +1,4 @@
+from celery import Celery
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -7,6 +8,11 @@ from .mqtt_conn import client
 import inspect
 import uuid
 import threading
+
+
+app = Celery('tasks', broker='amqp://guest@localhost//')
+app.control.revoke()
+
 
 STATUSES = (
     (0, "CREATED"),
@@ -130,7 +136,6 @@ class ControllerTask(models.Model):
     def clean(self):
         try:
             obj = json.loads(self.arguments)
-
         except ValueError:
             raise ValidationError("Needs to be valid JSON")
 
@@ -164,6 +169,7 @@ class Socket(models.Model):
     human_name = models.TextField()
     admin = models.ForeignKey(User, null=True, blank=True)
     users = models.ManyToManyField(User, related_name="socket_users", blank=True)
+    queued_task = models.UUIDField(null=True, blank=True)
 
     def __str__(self):
         if self.human_name:
@@ -172,20 +178,21 @@ class Socket(models.Model):
         return str(self.number) + str(self.controller)
 
     def send_state(self):
-        task = ControllerTask(controller=self.controller)
-        task.description = "Toggle Socket"
-        task.arguments = json.dumps({"socketnumber": self.number, "state": self.state})
-        task.name = "sockettoggle"
-        task.save()
+        new_task = ControllerTask(controller=self.controller)
+        new_task.description = "Toggle Socket"
+        new_task.arguments = json.dumps({"socketnumber": self.number, "state": self.state})
+        new_task.name = "sockettoggle"
+        new_task.save()
         #task.send_task()
 
-    def save(self, *args, **kwargs):
-        if self.pk:
+    def save(self, *args, send_state=True, **kwargs):
+        if self.pk and send_state is True:
             self.send_state()
 
         tmp = super(Socket, self).save(*args, **kwargs)
         return tmp
 
+    @task
     def toggle(self):
         self.state = not self.state
         self.save()
@@ -206,7 +213,10 @@ class SocketControl(models.Model):
         elif self.action == 2:
             self.socket.toggle()
         if self.timer != 0:
-            threading.Timer(self.timer, self.reverse).start()
+            task_id = self.socket.toggle.apply_async(delay=self.timer)
+            self.socket.queued_task = task_id
+            self.socket.save(send_state=False)
+            #threading.Timer(self.timer, self.reverse).start()
 
     def reverse(self):
         self.socket.toggle()
@@ -217,6 +227,12 @@ class TemperatureRecord(models.Model):
     temperature = models.FloatField()
     time = models.DateTimeField(auto_now_add=True)
 
+"""
+class TemperatureAction(models.Model):
+    controller = models.ForeignKey(SmartHomeController)
+    action = models.SmallIntegerField(default=0)
+    template = models.CharField(default='{}')
+"""
 
 class RemoteEvent(models.Model):
     controller = models.ForeignKey(SmartHomeController)
