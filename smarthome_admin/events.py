@@ -1,9 +1,11 @@
 import traceback
 
+from smarthome_admin.models import ControllerModel
+
 __author__ = 'dmarkey'
 import json
 
-import paho.mqtt.client as mqtt
+#import paho.mqtt.client as mqtt
 from django.conf import settings
 
 
@@ -33,13 +35,20 @@ def task_status(msg):
 
 def incoming_event(msg):
     from .models import SmartHomeController
-    obj = json.loads(msg.payload.decode("utf-8"))
+    obj = json.loads(msg)
     print(obj)
     controller_id = obj['controller_id']
-    controller = SmartHomeController.objects.get(unique_id=controller_id)
+    try:
+        controller = SmartHomeController.objects.get(unique_id=controller_id)
+    except SmartHomeController.DoesNotExist:
+        model = ControllerModel.objects.get(name=obj['model'])
+        controller, _ = SmartHomeController.objects.get_or_create(unique_id=controller_id,
+                                                                  model=model)
+
     if obj['route'] == "All":
         if obj['event'] == "BEACON":
             controller.clear_tasks()
+
         caps = controller.model.capabilities.all()
     else:
         caps = controller.model.capabilities.filter(route_name=obj['route'])
@@ -63,7 +72,7 @@ def on_message(client, userdata, msg):
 def on_publish(client, userdata, mid):
     print(mid)
 
-client = mqtt.Client()
+#client = mqtt.Client()
 
 
 def start_sub():

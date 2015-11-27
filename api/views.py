@@ -24,7 +24,7 @@ def get_client_ip(request):
     return ip
 
 
-class ControllerPingCreate(APIView):
+"""class ControllerPingCreate(APIView):
     def post(self, request, format=None):
         data = request.data.copy()
         data['ip'] = get_client_ip(request)
@@ -32,10 +32,10 @@ class ControllerPingCreate(APIView):
         serializer = ControllerPingSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
-            from smarthome_admin.mqtt_conn import start_pub
+            from smarthome_admin.events import start_pub
             start_pub()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)"""
 
 router = routers.DefaultRouter()
 
@@ -51,7 +51,8 @@ class SocketViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super(SocketViewSet, self).get_queryset()
-        return qs.filter(Q(users=self.request.user) | Q(admin=self.request.user))
+        return qs.filter(Q(users=self.request.user) | Q(admin=self.request.user)
+                         | Q(controller__admin=self.request.user) | Q(controller__admin=self.request.user))
 
     @method_decorator(ensure_csrf_cookie)
     def list(self, request, *args, **kwargs):
@@ -73,7 +74,7 @@ class UnClaimedControllerViewSet(ControllerViewSet):
 
     def get_queryset(self):
         qs = super(UnClaimedControllerViewSet, self).get_queryset()
-        return qs.filter(controllerping__ip=get_client_ip(self.request), admin=None)
+        return qs.filter(controllerping__ip=get_client_ip(self.request), admin=None).distinct()
 
     @detail_route(methods=['post'])
     def claim(self, request, pk=None):

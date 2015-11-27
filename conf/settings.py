@@ -170,8 +170,9 @@ REST_FRAMEWORK = {
     )
 }
 
+if DEBUG:
+   STATIC_ROOT = "static"
+else:
+   STATIC_ROOT = "static"
 
 CORS_ORIGIN_ALLOW_ALL = True
-
-MQTT_SERVER = "dmarkey.com"
-MQTT_PORT = 8000

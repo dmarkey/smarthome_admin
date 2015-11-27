@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
 import json
-from .mqtt_conn import client
+#from .mqtt_conn import client
 # Create your models here.
 import inspect
 import uuid
@@ -11,7 +11,6 @@ import threading
 
 
 app = Celery('tasks', broker='amqp://guest@localhost//')
-app.control.revoke()
 
 
 STATUSES = (
@@ -192,7 +191,6 @@ class Socket(models.Model):
         tmp = super(Socket, self).save(*args, **kwargs)
         return tmp
 
-    @task
     def toggle(self):
         self.state = not self.state
         self.save()

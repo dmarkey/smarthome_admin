@@ -1,8 +1,14 @@
 from django.conf.urls import patterns, include, url
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+
 from api import views
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
+from django.conf import settings
 admin.autodiscover()
+
+from django.conf.urls.static import static
+
 
 urlpatterns = patterns('',
     # Examples:
@@ -14,8 +20,9 @@ urlpatterns = patterns('',
 
     # Uncomment the next line to enable the admin:
     url(r'^admin/', include(admin.site.urls)),
-    url(r'^controller_ping_create/$', views.ControllerPingCreate.as_view()),
+    #url(r'^controller_ping_create/$', views.ControllerPingCreate.as_view()),
     url(r'^api/', include(views.router.urls)),
+    url(r'^static/(?P<path>.*)$', 'django.views.static.serve', {'document_root': settings.STATIC_ROOT, 'show_indexes': settings.DEBUG}),
 
 )
 
