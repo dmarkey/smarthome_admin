@@ -1,16 +1,18 @@
+import redis
 from celery import Celery
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
 import json
-#from .mqtt_conn import client
-# Create your models here.
 import inspect
 import uuid
-import threading
 
 
-app = Celery('tasks', broker='amqp://guest@localhost//')
+r = redis.StrictRedis(host='localhost', port=6379, db=0)
+
+
+
+#app = Celery('tasks', broker='amqp://guest@localhost//')
 
 
 STATUSES = (
@@ -84,6 +86,10 @@ class SmartHomeController(models.Model):
     users = models.ManyToManyField(User, related_name="controller_users", blank=True)
     human_name = models.TextField(default="No name")
 
+    def send_message(self, obj):
+        obj['controller_id'] = self.unique_id
+        return r.publish("/controllers/" + str(self.unique_id), json.dumps(obj))
+
     def queue_next_task(self):
         if not ControllerTask.objects.filter(status=1, controller=self):
             pending = ControllerTask.objects.filter(status=0, controller=self)
@@ -142,11 +148,10 @@ class ControllerTask(models.Model):
         message = json.loads(self.arguments)
         message['name'] = self.name
         message['task_id'] = str(self.task_id)
-        return json.dumps(message)
+        return message
 
     def send_task(self):
-        topic = self.controller.get_topic_name()
-        client.publish(topic, self._get_payload(), qos=2)
+        self.controller.send_message(self._get_payload())
         self.status = 1
         self.save()
 
@@ -182,7 +187,7 @@ class Socket(models.Model):
         new_task.arguments = json.dumps({"socketnumber": self.number, "state": self.state})
         new_task.name = "sockettoggle"
         new_task.save()
-        #task.send_task()
+        #new_task.send_task()
 
     def save(self, *args, send_state=True, **kwargs):
         if self.pk and send_state is True:

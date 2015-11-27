@@ -18,8 +18,7 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe("/admin/#")
 
 
-def task_status(msg):
-    obj = json.loads(msg.payload.decode("utf-8"))
+def task_status(obj):
     from .models import ControllerTask
     try:
         task = ControllerTask.objects.get(task_id=obj['task_id'])
@@ -28,15 +27,14 @@ def task_status(msg):
 
         if task.status == 3:
             task.controller.queue_next_task()
+
     except:
         print("Error")
-        print(msg.payload.decode("utf-8"))
 
 
 def incoming_event(msg):
     from .models import SmartHomeController
     obj = json.loads(msg)
-    print(obj)
     controller_id = obj['controller_id']
     try:
         controller = SmartHomeController.objects.get(unique_id=controller_id)
@@ -44,6 +42,9 @@ def incoming_event(msg):
         model = ControllerModel.objects.get(name=obj['model'])
         controller, _ = SmartHomeController.objects.get_or_create(unique_id=controller_id,
                                                                   model=model)
+    if obj['event'] == "task_status":
+        task_status(obj)
+        return
 
     if obj['route'] == "All":
         if obj['event'] == "BEACON":

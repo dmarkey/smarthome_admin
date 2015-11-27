@@ -27,18 +27,14 @@ srv = None
 @asyncio.coroutine
 def websocket_handler(request):
 
-    #import ipdb; ipdb.set_trace()
     ws = web.WebSocketResponse(autoping=True, protocols=("arduino",))
     yield from ws.prepare(request)
 
     controller_id = None
-    send_messages = None
 
     try:
         while True:
             msg = yield from ws.receive()
-
-            print(msg.data)
 
             if msg.tp == aiohttp.MsgType.text:
                 data = json.loads(msg.data)
@@ -46,7 +42,7 @@ def websocket_handler(request):
                     controller_id = str(data['controller_id'])
                     connections[controller_id] = ws
                     yield from subscriber.subscribe(['/controllers/' + controller_id])
-                    loop.run_in_executor(None, incoming_event, msg.data)
+                loop.run_in_executor(None, incoming_event, msg.data)
 
                 if msg.data == 'close':
                     yield from ws.close()
@@ -77,7 +73,7 @@ def redis_handler():
         obj = json.loads(reply.value)
         controller_id = obj['controller_id']
         if controller_id in connections:
-            connections[controller_id].send_str(obj)
+            connections[controller_id].send_str(reply.value)
 
         print('Received: ', repr(reply.value), 'on channel', reply.channel)
 
