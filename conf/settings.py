@@ -170,9 +170,14 @@ REST_FRAMEWORK = {
     )
 }
 
+INSTALLED_APPS += ("djcelery", )
+
 if DEBUG:
    STATIC_ROOT = "static"
 else:
    STATIC_ROOT = "static"
+
+import djcelery
+djcelery.setup_loader()
 
 CORS_ORIGIN_ALLOW_ALL = True

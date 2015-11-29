@@ -40,8 +40,10 @@ def websocket_handler(request):
                 data = json.loads(msg.data)
                 if data['event'] == "BEACON":
                     controller_id = str(data['controller_id'])
+                    data['host'] = request.host
                     connections[controller_id] = ws
                     yield from subscriber.subscribe(['/controllers/' + controller_id])
+                print(msg.data)
                 loop.run_in_executor(None, incoming_event, msg.data)
 
                 if msg.data == 'close':

@@ -8,7 +8,7 @@ from rest_framework import routers
 from rest_framework.decorators import detail_route
 from rest_framework.authentication import TokenAuthentication, SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
-from .serializers import ControllerPingSerializer, SocketSerializer, ControllerSerializer
+from .serializers import  SocketSerializer, ControllerSerializer
 from rest_framework import status
 from smarthome_admin.models import Socket, SmartHomeController
 

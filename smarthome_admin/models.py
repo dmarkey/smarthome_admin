@@ -1,18 +1,18 @@
 import redis
 from celery import Celery
+from celery.contrib.methods import task_method
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
 import json
 import inspect
 import uuid
-
+from celery.task.control import revoke
 
 r = redis.StrictRedis(host='localhost', port=6379, db=0)
 
 
-
-#app = Celery('tasks', broker='amqp://guest@localhost//')
+app = Celery('tasks', broker='redis://localhost/')
 
 
 STATUSES = (
@@ -85,6 +85,7 @@ class SmartHomeController(models.Model):
     admin = models.ForeignKey(User, null=True, blank=True)
     users = models.ManyToManyField(User, related_name="controller_users", blank=True)
     human_name = models.TextField(default="No name")
+    ip = models.GenericIPAddressField(default="127.0.0.1")
 
     def send_message(self, obj):
         obj['controller_id'] = self.unique_id
@@ -121,12 +122,6 @@ class SmartHomeController(models.Model):
             return self.name
         else:
             return self.unique_id
-
-
-class ControllerPing(models.Model):
-    controller = models.ForeignKey(SmartHomeController)
-    time = models.DateTimeField(auto_now=True)
-    ip = models.GenericIPAddressField()
 
 
 class ControllerTask(models.Model):
@@ -207,6 +202,10 @@ class SocketControl(models.Model):
     timer = models.IntegerField(default=0)
 
     def execute(self):
+        if self.socket.queued_task:
+            revoke(str(self.socket.queued_task))
+            self.socket.queued_task = None
+
         if self.action == 0 and self.socket.state is True:
             self.socket.state = False
             self.socket.save()
@@ -216,11 +215,13 @@ class SocketControl(models.Model):
         elif self.action == 2:
             self.socket.toggle()
         if self.timer != 0:
-            task_id = self.socket.toggle.apply_async(delay=self.timer)
-            self.socket.queued_task = task_id
+            task = self.reverse.apply_async(countdown=self.timer)
+            self.socket.queued_task = task.task_id
             self.socket.save(send_state=False)
+
             #threading.Timer(self.timer, self.reverse).start()
 
+    @app.task(filter=task_method)
     def reverse(self):
         self.socket.toggle()
 
