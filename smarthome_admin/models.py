@@ -1,25 +1,33 @@
+from datetime import datetime, timedelta
+
 import redis
-from celery import Celery
+from celery.contrib.methods import task
 from celery.contrib.methods import task_method
+from celery.worker.control import revoke
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
 import json
 import inspect
 import uuid
-from celery.task.control import revoke
+
 
 r = redis.StrictRedis(host='localhost', port=6379, db=0)
 
-
-app = Celery('tasks', broker='redis://localhost/')
-
+#app = Celery('tasks', broker='redis://localhost/')
 
 STATUSES = (
     (0, "CREATED"),
     (1, "SENT"),
     (2, "ACKNOWLEDGED"),
     (3, "COMPLETE"),
+
+)
+
+SOCKET_ACTIONS = (
+    (0, "Socket Off"),
+    (1, "Socket On"),
+    (2, "Socket Toggle"),
 
 )
 
@@ -172,9 +180,9 @@ class Socket(models.Model):
 
     def __str__(self):
         if self.human_name:
-            return self.human_name + str(self.controller)
+            return str(self.controller) + " " + self.human_name
 
-        return str(self.number) + str(self.controller)
+        return str(self.controller) + " " + str(self.number)
 
     def send_state(self):
         new_task = ControllerTask(controller=self.controller)
@@ -182,7 +190,7 @@ class Socket(models.Model):
         new_task.arguments = json.dumps({"socketnumber": self.number, "state": self.state})
         new_task.name = "sockettoggle"
         new_task.save()
-        #new_task.send_task()
+        # new_task.send_task()
 
     def save(self, *args, send_state=True, **kwargs):
         if self.pk and send_state is True:
@@ -191,39 +199,48 @@ class Socket(models.Model):
         tmp = super(Socket, self).save(*args, **kwargs)
         return tmp
 
+    @task(filter=task_method)
     def toggle(self):
         self.state = not self.state
         self.save()
 
 
+class SocketSet(models.Model):
+    name = models.TextField()
+    creator = models.ForeignKey("auth.User")
+    sockets = models.ManyToManyField(Socket)
+
+    def __str__(self):
+        return self.name
+
+
 class SocketControl(models.Model):
-    socket = models.ForeignKey(Socket)
-    action = models.SmallIntegerField(default=0)
+    socket_set = models.ForeignKey(SocketSet, null=True)
+    action = models.SmallIntegerField(default=0, choices=SOCKET_ACTIONS)
     timer = models.IntegerField(default=0)
+    creator = models.ForeignKey("auth.User", null=True)
 
+    @task
     def execute(self):
-        if self.socket.queued_task:
-            revoke(str(self.socket.queued_task))
-            self.socket.queued_task = None
 
-        if self.action == 0 and self.socket.state is True:
-            self.socket.state = False
-            self.socket.save()
-        elif self.action == 1 and self.socket.state is False:
-            self.socket.state = True
-            self.socket.save()
-        elif self.action == 2:
-            self.socket.toggle()
-        if self.timer != 0:
-            task = self.reverse.apply_async(countdown=self.timer)
-            self.socket.queued_task = task.task_id
-            self.socket.save(send_state=False)
+        for socket in self.socket_set.sockets.all():
+            if socket.queued_task:
+                revoke(str(socket.queued_task))
+                socket.queued_task = None
+            if self.action == 0 and socket.state is True:
+                socket.state = False
+                socket.save()
+            elif self.action == 1 and socket.state is False:
+                socket.state = True
+                socket.save()
+            elif self.action == 2:
+                socket.toggle()
+            if self.timer != 0:
+                task = socket.toggle.apply_async(countdown=self.timer)
+                socket.queued_task = task.task_id
+                socket.save(send_state=False)
 
-            #threading.Timer(self.timer, self.reverse).start()
-
-    @app.task(filter=task_method)
-    def reverse(self):
-        self.socket.toggle()
+            # threading.Timer(self.timer, self.reverse).start()
 
 
 class TemperatureRecord(models.Model):
@@ -231,12 +248,14 @@ class TemperatureRecord(models.Model):
     temperature = models.FloatField()
     time = models.DateTimeField(auto_now_add=True)
 
+
 """
 class TemperatureAction(models.Model):
     controller = models.ForeignKey(SmartHomeController)
     action = models.SmallIntegerField(default=0)
     template = models.CharField(default='{}')
 """
+
 
 class RemoteEvent(models.Model):
     controller = models.ForeignKey(SmartHomeController)
@@ -251,3 +270,40 @@ class RegisteredRemoteEvent(SocketControl):
     time = models.DateTimeField(auto_now_add=True)
 
 
+class SocketTimerSlot(SocketControl):
+    enabled = models.BooleanField(default=False)
+    monday = models.BooleanField(default=False)
+    tuesday = models.BooleanField(default=False)
+    wednesday = models.BooleanField(default=False)
+    thursday = models.BooleanField(default=False)
+    friday = models.BooleanField(default=False)
+    saturday = models.BooleanField(default=False)
+    sunday = models.BooleanField(default=False)
+    start_time = models.TimeField()
+    stop_time = models.TimeField()
+
+    def get_days(self):
+        return [x for x in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'
+                            ] if getattr(self, x)]
+
+    def get_schedule(self):
+        return "Between " + str(self.start_time) + " and " + str(self.stop_time) + " on days " + str(self.get_days())
+
+    def save(self, *args, **kwargs):
+        if self.start_time > self.stop_time:
+            date_one = datetime.now().date()
+            date_two = date_one + timedelta(days=1)
+            date_one = datetime.combine(date_two, self.stop_time)
+            date_two = datetime.combine(date_two, self.start_time)
+        else:
+            date_one = datetime.combine(datetime.now().date(), self.start_time)
+            date_two = datetime.combine(datetime.now().date(), self.stop_time)
+
+        self.timer = (date_two - date_one).total_seconds()
+
+        super(SocketTimerSlot, self).save(*args, **kwargs)
+
+    def countdown(self):
+        now = datetime.now().date()
+        now_dt = datetime.combine(now, self.start_time)
+        self.execute.apply_async(eta=now_dt)

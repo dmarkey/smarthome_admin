@@ -1,4 +1,5 @@
 # Django settings for untitled project.
+from datetime import timedelta
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
@@ -181,3 +182,17 @@ import djcelery
 djcelery.setup_loader()
 
 CORS_ORIGIN_ALLOW_ALL = True
+
+from celery.schedules import crontab
+
+CELERYBEAT_SCHEDULE = {
+    # Executes every Monday morning at 7:30 A.M
+    'check_schedule': {
+        'task': 'smarthome_admin.tasks.check_schedule',
+        'schedule': crontab(minute=0),
+        'args': ()
+    }
+}
+
+CELERY_TIMEZONE = 'UTC'
+BROKER_URL = 'redis://localhost:6379/0'

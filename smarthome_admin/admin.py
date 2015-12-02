@@ -1,6 +1,7 @@
 from django.contrib import admin
 from .models import SmartHomeController, ControllerTask, RemoteEvent, ControllerCapability, \
-    ControllerModel, Socket, TemperatureRecord, RegisteredRemoteEvent
+    ControllerModel, Socket, TemperatureRecord, RegisteredRemoteEvent, SocketTimerSlot, SocketSet
+
 __author__ = 'dmarkey'
 
 class SmartHomeControllerAdmin(admin.ModelAdmin):
@@ -31,12 +32,26 @@ class TemperatureAdmin(admin.ModelAdmin):
     list_display = ['controller', 'temperature', "time"]
 
 
+class SocketControlAdmin(admin.ModelAdmin):
+    exclude = ["creator"]
+
+    def save_model(self, request, obj, form, change):
+        obj = request.user
+        obj.save()
+
+
 class RemoteEventAdmin(admin.ModelAdmin):
     list_display = ['controller', 'encoding', "value"]
 
 
-class RegisteredRemoteEventAdmin(admin.ModelAdmin):
-    list_display = ['socket', 'encoding', "value"]
+class RegisteredRemoteEventAdmin(SocketControlAdmin):
+    list_display = ['socket_set', 'encoding', "value"]
+
+
+class SocketTimerSlotAdmin(admin.ModelAdmin):
+    exclude = ["creator", "timer"]
+    list_display = ["socket_set", 'timer', "get_schedule"]
+
 
 admin.site.register(SmartHomeController, SmartHomeControllerAdmin)
 admin.site.register(ControllerTask, TaskAdmin)
@@ -45,4 +60,6 @@ admin.site.register(ControllerModel)
 admin.site.register(TemperatureRecord, TemperatureAdmin)
 admin.site.register(Socket, SocketAdmin)
 admin.site.register(RemoteEvent, RemoteEventAdmin)
+admin.site.register(SocketTimerSlot, SocketTimerSlotAdmin)
 admin.site.register(RegisteredRemoteEvent, RegisteredRemoteEventAdmin)
+admin.site.register(SocketSet)
