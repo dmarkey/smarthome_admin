@@ -32,9 +32,8 @@ def task_status(obj):
         print("Error")
 
 
-def incoming_event(msg):
+def incoming_event(obj):
     from .models import SmartHomeController
-    obj = json.loads(msg)
     controller_id = obj['controller_id']
     try:
         controller = SmartHomeController.objects.get(unique_id=controller_id)
@@ -49,6 +48,7 @@ def incoming_event(msg):
     if obj['route'] == "All":
         if obj['event'] == "BEACON":
             controller.clear_tasks()
+            print(obj)
 
         caps = controller.model.capabilities.all()
     else:
