@@ -1,5 +1,5 @@
 __author__ = 'dmarkey'
-from .models import TemperatureRecord
+
 
 class ControlBase(object):
     @staticmethod
@@ -38,11 +38,12 @@ class Temperature(ControlBase):
 
     @staticmethod
     def event(controller, event):
+        from .models import TemperatureRecord
         if event['event'] == "Temp":
-
             TemperatureRecord(temperature=event['value'], controller=controller).save()
 
     def get_extra_items(self, controller):
+        from .models import TemperatureRecord
         return TemperatureRecord.objects.filter(controller=controller).order_by("-pk")[0]
 
 
