@@ -11,7 +11,7 @@ class ControlBase(object):
         pass
 
     @staticmethod
-    def get_extra_items(self, controller):
+    def get_extra_items(controller):
         return None
 
 
@@ -42,7 +42,8 @@ class Temperature(ControlBase):
         if event['event'] == "Temp":
             TemperatureRecord(temperature=event['value'], controller=controller).save()
 
-    def get_extra_items(self, controller):
+    @staticmethod
+    def get_extra_items(controller):
         from .models import TemperatureRecord
         return TemperatureRecord.objects.filter(controller=controller).order_by("-pk")[0]
 
