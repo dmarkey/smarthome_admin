@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import redis
 from celery.contrib.methods import task
 from celery.contrib.methods import task_method
-from celery.worker.control import revoke
+from celery.task.control import revoke
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
