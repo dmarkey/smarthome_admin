@@ -45,7 +45,10 @@ class Temperature(ControlBase):
     @staticmethod
     def get_extra_items(controller):
         from .models import TemperatureRecord
-        return TemperatureRecord.objects.filter(controller=controller).order_by("-pk")[0]
+        try:
+            return TemperatureRecord.objects.filter(controller=controller).order_by("-pk").values()[0]
+        except IndexError:
+            return None
 
 
 class RemoteControl(ControlBase):
