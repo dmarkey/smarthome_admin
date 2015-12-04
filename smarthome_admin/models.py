@@ -126,7 +126,7 @@ class SmartHomeController(models.Model):
         return "/smart_plug_work/SmartPlug-%s" % self.unique_id
 
     def extra_items(self):
-        return {c.name: c.get_extra_items(self) for c in self.capabilities()}
+        return {c.name: c.get_control_class().get_extra_items(self) for c in self.model.capabilities.all()}
 
     def __str__(self):
         if self.name:
