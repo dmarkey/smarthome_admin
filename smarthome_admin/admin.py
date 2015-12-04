@@ -36,7 +36,7 @@ class SocketControlAdmin(admin.ModelAdmin):
     exclude = ["creator"]
 
     def save_model(self, request, obj, form, change):
-        obj = request.user
+        obj.creator = request.user
         obj.save()
 
 
