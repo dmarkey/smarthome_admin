@@ -74,7 +74,7 @@ class UnClaimedControllerViewSet(ControllerViewSet):
 
     def get_queryset(self):
         qs = super(UnClaimedControllerViewSet, self).get_queryset()
-        return qs.filter(controllerping__ip=get_client_ip(self.request), admin=None).distinct()
+        return qs.filter(ip=get_client_ip(self.request), admin=None).distinct()
 
     @detail_route(methods=['post'])
     def claim(self, request, pk=None):

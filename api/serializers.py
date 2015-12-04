@@ -16,5 +16,5 @@ class ControllerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SmartHomeController
-        fields = ("id", 'model', 'human_name', "admin", "sockets", "capabilities")
+        fields = ("id", 'model', 'human_name', "admin", "sockets", "capabilities", "extra_items")
 
