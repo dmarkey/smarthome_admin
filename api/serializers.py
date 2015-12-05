@@ -8,7 +8,7 @@ class SocketSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Socket
-        fields = ("id", 'state', 'human_name')
+        fields = ("id", 'state', 'human_name', "number")
 
 
 class ControllerSerializer(serializers.ModelSerializer):
