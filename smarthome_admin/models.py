@@ -5,6 +5,7 @@ from celery.contrib.methods import task
 from celery.contrib.methods import task_method
 from celery.task.control import revoke
 from django.contrib.auth.models import User
+from django.contrib.postgres.fields import JSONField
 from django.core.exceptions import ValidationError
 from django.db import models
 import json
@@ -14,7 +15,6 @@ import uuid
 
 r = redis.StrictRedis(host='localhost', port=6379, db=0)
 
-#app = Celery('tasks', broker='redis://localhost/')
 
 STATUSES = (
     (0, "CREATED"),
@@ -94,6 +94,7 @@ class SmartHomeController(models.Model):
     users = models.ManyToManyField(User, related_name="controller_users", blank=True)
     human_name = models.TextField(default="No name")
     ip = models.GenericIPAddressField(default="127.0.0.1")
+    extra = JSONField(default={})
 
     def send_message(self, obj):
         obj['controller_id'] = self.unique_id
@@ -180,6 +181,7 @@ class Socket(models.Model):
     admin = models.ForeignKey(User, null=True, blank=True)
     users = models.ManyToManyField(User, related_name="socket_users", blank=True)
     queued_task = models.UUIDField(null=True, blank=True)
+    extra = JSONField(default={})
 
     def __str__(self):
         if self.human_name:
@@ -246,18 +248,17 @@ class SocketControl(models.Model):
             # threading.Timer(self.timer, self.reverse).start()
 
 
-class TemperatureRecord(models.Model):
+class TemperatureZone(models.Model):
+    name = models.TextField(max_length=256)
     controller = models.ForeignKey(SmartHomeController)
+    extra = JSONField(default={})
+
+
+class TemperatureRecord(models.Model):
     temperature = models.FloatField()
     time = models.DateTimeField(auto_now_add=True)
-
-
-"""
-class TemperatureAction(models.Model):
-    controller = models.ForeignKey(SmartHomeController)
-    action = models.SmallIntegerField(default=0)
-    template = models.CharField(default='{}')
-"""
+    extra = JSONField(default = {})
+    zone = models.ForeignKey(TemperatureZone, null=True)
 
 
 class RemoteEvent(models.Model):

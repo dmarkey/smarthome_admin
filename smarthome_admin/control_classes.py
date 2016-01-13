@@ -40,15 +40,23 @@ class Temperature(ControlBase):
     def event(controller, event):
         from .models import TemperatureRecord
         if event['event'] == "Temp":
-            TemperatureRecord(temperature=event['value'], controller=controller).save()
+            zone = Temperature.get_zone(controller, event)
+            TemperatureRecord(temperature=event['value'], zone=zone).save()
 
     @staticmethod
     def get_extra_items(controller):
         from .models import TemperatureRecord
         try:
-            return TemperatureRecord.objects.filter(controller=controller).order_by("-pk").values()[0]
+            return TemperatureRecord.objects.filter(zone__controller=controller).order_by("-pk").values()[0]
         except IndexError:
             return None
+
+    @staticmethod
+    def get_zone(controller, event):
+        from .models import TemperatureZone
+        zone = event.get("zone", "main")
+        (zone_obj, _) = TemperatureZone.objects.get_or_create(controller=controller, name=zone)
+        return zone_obj
 
 
 class RemoteControl(ControlBase):

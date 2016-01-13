@@ -29,7 +29,7 @@ class TaskAdmin(admin.ModelAdmin):
 
 
 class TemperatureAdmin(admin.ModelAdmin):
-    list_display = ['controller', 'temperature', "time"]
+    list_display = ['zone', 'temperature', "time"]
 
 
 class SocketControlAdmin(admin.ModelAdmin):
