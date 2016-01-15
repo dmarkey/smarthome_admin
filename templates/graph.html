@@ -1,0 +1,22 @@
+{% extends "admin/base.html" %}
+
+{% block extrahead %}
+<script src="https://code.jquery.com/jquery-2.2.0.js"></script>
+<script src="http://code.highcharts.com/highcharts.js"></script>
+
+
+ {% load chartit %}
+ {{ temperaturechart|load_charts:"container" }}
+
+
+{% endblock %}
+
+
+{% block content %}
+
+
+    <div id='container'> Chart will be rendered here </div>
+
+
+{% endblock %}
+
