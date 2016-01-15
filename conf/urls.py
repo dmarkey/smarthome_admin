@@ -23,6 +23,7 @@ urlpatterns = patterns('',
     #url(r'^controller_ping_create/$', views.ControllerPingCreate.as_view()),
     url(r'^api/', include(views.router.urls)),
     url(r'^static/(?P<path>.*)$', 'django.views.static.serve', {'document_root': settings.STATIC_ROOT, 'show_indexes': settings.DEBUG}),
+    url(r'^zone_graph/(?P<num>[0-9]+)/$', "charts.views.temperature_chart_view")
 
 )
 

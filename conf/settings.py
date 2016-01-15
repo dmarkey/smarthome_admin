@@ -13,7 +13,7 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'smarthome',                      # Or path to database file if using sqlite3.
+        'NAME': 'smarthome2',                      # Or path to database file if using sqlite3.
         'USER': '',                      # Not used with sqlite3.
         'PASSWORD': '',                  # Not used with sqlite3.
         'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
@@ -108,6 +108,7 @@ ROOT_URLCONF = 'conf.urls'
 WSGI_APPLICATION = 'conf.wsgi.application'
 
 TEMPLATE_DIRS = (
+    "templates",
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
@@ -127,7 +128,9 @@ INSTALLED_APPS = (
     'smarthome_admin',
     'rest_framework',
     'rest_framework.authtoken',
-    "corsheaders"
+    "corsheaders",
+    "chartit"
+
 )
 
 # A sample logging configuration. The only tangible logging
