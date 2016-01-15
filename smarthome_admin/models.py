@@ -253,11 +253,14 @@ class TemperatureZone(models.Model):
     controller = models.ForeignKey(SmartHomeController)
     extra = JSONField(default={})
 
+    def __str__(self):
+        return str(self.controller) + "\\" + self.name
+
 
 class TemperatureRecord(models.Model):
     temperature = models.FloatField()
     time = models.DateTimeField(auto_now_add=True)
-    extra = JSONField(default = {})
+    extra = JSONField(default={})
     zone = models.ForeignKey(TemperatureZone, null=True)
 
 
