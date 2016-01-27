@@ -1,39 +1,35 @@
-from chartit import DataPool, Chart
+from datetime import datetime
+from django.http import JsonResponse, Http404
 from django.shortcuts import render_to_response
 from django.template import RequestContext
+import json
 
 from smarthome_admin.models import TemperatureRecord, TemperatureZone
 
 
+class DatetimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.strftime('%Y-%m-%dT%H:%M:%SZ')
+        #elif isinstance(obj, datetime.date):
+        #    return obj.strftime('%Y-%m-%d')
+        # Let the base class default method raise the TypeError
+        return json.JSONEncoder.default(self, obj)
+
+
 def temperature_chart_view(request, num):
-    zone = TemperatureZone.objects.get(pk=num)
-    # Step 1: Create a DataPool with the data we want to retrieve.
-    temperaturedata = DataPool(
-            series=
-            [{'options': {
-                'source': TemperatureRecord.objects.filter(zone__pk=num)},
-                'terms': [
-                    'time',
-                    'temperature']}
-            ])
+    try:
+        zone = TemperatureZone.objects.get(pk=num)
+        records = list(TemperatureRecord.objects.filter(zone=zone).values_list("time", "temperature"))
+    except TemperatureZone.DoesNotExist:
+        raise Http404
 
-    cht = Chart(
-            datasource=temperaturedata,
-            series_options=
-            [{'options': {
-                'type': 'line',
-                'stacking': True},
-                'terms': {
-                    'time': [
-                        'temperature']
-                }}],
-            chart_options=
-            {'title': {
-                'text': str(zone)},
-                'xAxis': {
-                    'type': 'datetime',
-                    'title': {
-                        'text': 'Time'}}})
+    return JsonResponse(records, safe=False, encoder=DatetimeEncoder)
 
-    # Step 3: Send the chart object to the template.
-    return render_to_response("graph.html", {'temperaturechart': cht}, context_instance=RequestContext(request))
+
+
+def temperature_chart_zones(request):
+    zones = TemperatureZone.objects.all()
+
+    return render_to_response("graph.html", {"zones": zones}, context_instance=RequestContext(request))
+
