@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import SmartHomeController, ControllerTask, RemoteEvent, ControllerCapability, \
-    ControllerModel, Socket, TemperatureRecord, RegisteredRemoteEvent, SocketTimerSlot, SocketSet
+    ControllerModel, Socket, TemperatureRecord, RegisteredRemoteEvent, SocketTimerSlot, SocketSet, TemperatureZone
 
 __author__ = 'dmarkey'
 
@@ -59,6 +59,7 @@ admin.site.register(ControllerTask, TaskAdmin)
 admin.site.register(ControllerCapability)
 admin.site.register(ControllerModel)
 admin.site.register(TemperatureRecord, TemperatureAdmin)
+admin.site.register(TemperatureZone)
 admin.site.register(Socket, SocketAdmin)
 admin.site.register(RemoteEvent, RemoteEventAdmin)
 admin.site.register(SocketTimerSlot, SocketTimerSlotAdmin)
