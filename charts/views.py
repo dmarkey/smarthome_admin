@@ -20,7 +20,7 @@ class DatetimeEncoder(json.JSONEncoder):
 def temperature_chart_view(request, num):
     try:
         zone = TemperatureZone.objects.get(pk=num)
-        records = list(TemperatureRecord.objects.filter(zone=zone).values_list("time", "temperature"))
+        records = list(TemperatureRecord.objects.filter(zone=zone)[:3000].values_list("time", "temperature"))
     except TemperatureZone.DoesNotExist:
         raise Http404
 
