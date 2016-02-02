@@ -258,7 +258,7 @@ class TemperatureZone(models.Model):
         value = r.hget("zone_latest", str(self.id))
         if value is None:
             return None
-        return list(serializers.deserialize('json', value))[0].temperature
+        return list(serializers.deserialize('json', value))[0].object.temperature
 
     def __str__(self):
         return str(self.controller) + "\\" + self.name
