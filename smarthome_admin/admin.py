@@ -35,7 +35,7 @@ class TemperatureAdmin(admin.ModelAdmin):
 
 class TemperatureZoneAdmin(admin.ModelAdmin):
     list_display = ["controller", "name", 'get_latest_record']
-    list_filter = ('controller', 'time')
+    list_filter = ('controller',)
 
 
 class SocketControlAdmin(admin.ModelAdmin):
