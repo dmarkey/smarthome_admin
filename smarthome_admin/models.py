@@ -6,6 +6,7 @@ from celery.contrib.methods import task_method
 from celery.task.control import revoke
 from django.contrib.auth.models import User
 from django.contrib.postgres.fields import JSONField
+from django.core import serializers
 from django.core.exceptions import ValidationError
 from django.db import models
 import json
@@ -253,6 +254,12 @@ class TemperatureZone(models.Model):
     controller = models.ForeignKey(SmartHomeController)
     extra = JSONField(default={})
 
+    def get_latest_record(self):
+        value = r.hget("zone_latest", str(self.id))
+        if value is None:
+            return None
+        return serializers.deserialize('json', value)[0]
+
     def __str__(self):
         return str(self.controller) + "\\" + self.name
 
@@ -262,6 +269,12 @@ class TemperatureRecord(models.Model):
     time = models.DateTimeField(auto_now_add=True)
     extra = JSONField(default={})
     zone = models.ForeignKey(TemperatureZone, null=True)
+
+    def save(self, *args, **kwargs):
+        ret = super(TemperatureRecord, self).save(*args, **kwargs)
+        record = serializers.serialize('json', [self, ])
+        r.hset("zone_latest", str(self.zone_id), record)
+        return ret
 
 
 class RemoteEvent(models.Model):
