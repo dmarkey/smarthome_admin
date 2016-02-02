@@ -258,7 +258,7 @@ class TemperatureZone(models.Model):
         value = r.hget("zone_latest", str(self.id))
         if value is None:
             return None
-        return serializers.deserialize('json', value)[0]
+        return list(serializers.deserialize('json', value))[0]
 
     def __str__(self):
         return str(self.controller) + "\\" + self.name
@@ -275,6 +275,9 @@ class TemperatureRecord(models.Model):
         record = serializers.serialize('json', [self, ])
         r.hset("zone_latest", str(self.zone_id), record)
         return ret
+
+    class Meta:
+        ordering = ['-time']
 
 
 class RemoteEvent(models.Model):
