@@ -33,6 +33,11 @@ class TemperatureAdmin(admin.ModelAdmin):
     list_filter = ('zone', 'time')
 
 
+class TemperatureZoneAdmin(admin.ModelAdmin):
+    list_display = ["controller", "name", 'get_latest_record']
+    list_filter = ('controller', 'time')
+
+
 class SocketControlAdmin(admin.ModelAdmin):
     exclude = ["creator"]
 
@@ -59,7 +64,7 @@ admin.site.register(ControllerTask, TaskAdmin)
 admin.site.register(ControllerCapability)
 admin.site.register(ControllerModel)
 admin.site.register(TemperatureRecord, TemperatureAdmin)
-admin.site.register(TemperatureZone)
+admin.site.register(TemperatureZone, TemperatureZoneAdmin)
 admin.site.register(Socket, SocketAdmin)
 admin.site.register(RemoteEvent, RemoteEventAdmin)
 admin.site.register(SocketTimerSlot, SocketTimerSlotAdmin)
