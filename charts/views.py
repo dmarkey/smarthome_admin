@@ -27,7 +27,8 @@ def temperature_chart_view(request, num):
     except TemperatureZone.DoesNotExist:
         raise Http404
 
-    return JsonResponse(records, safe=False, encoder=DatetimeEncoder)
+    wrapper = {"zone": zone.name, "data": records}
+    return JsonResponse(wrapper, safe=False, encoder=DatetimeEncoder)
 
 
 def temperature_chart_zones(request):

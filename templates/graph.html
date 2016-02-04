@@ -40,7 +40,9 @@
     <div class="text-center">
         <h1>Zone charts</h1>
         {% for zone in zones %}
-            <button type="button" class="btn btn-default" onclick="loadzone({{ zone.pk }})">{{ zone }} {{ zone.get_latest_record  }}°C</button>
+            <button type="button" class="btn btn-default"
+                    onclick="loadzone({{ zone.pk }})">{{ zone }} {{ zone.get_latest_record }}°C
+            </button>
         {% endfor %}
         <div id="chart"></div>
     </div>
@@ -53,17 +55,32 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.11.1/moment.js"></script>
 
 <script>
+    chart = null;
     function loadzone(zone_id) {
         var url = "./" + zone_id;
 
-        $.getJSON(url, function render(data) {
 
+        $.getJSON(url, function render(wrapper) {
 
-                    newData = data.map(function (row) {
+            data = wrapper.data;
+
+                    var newData = data.map(function (row) {
                         return [Date.parse(row[0]), row[1]];
                     });
 
                     newData.sort();
+                    var chart = $('#chart').highcharts();
+                    if (chart != null) {
+                        chart.addSeries({
+                            name: wrapper.name,
+                            data: newData
+
+                        });
+                        chart.redraw();
+                        return
+                    }
+
+
                     $('#chart').highcharts({
 
                         chart: {
@@ -117,8 +134,7 @@
                             }, {
                                 type: 'all',
                                 text: 'All'
-                            }],
-                            selected: 3
+                            }]
                         },
 
 
@@ -130,7 +146,7 @@
 
 
                         series: [{
-                            name: 'Temperature',
+                            name: wrapper.zone,
                             data: newData
 
                         }]
