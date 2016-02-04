@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.http import JsonResponse, Http404
 from django.shortcuts import render_to_response
 from django.template import RequestContext
@@ -18,14 +18,16 @@ class DatetimeEncoder(json.JSONEncoder):
 
 
 def temperature_chart_view(request, num):
+    the_datetime = datetime.now()
+    this_time_yesterday = the_datetime - timedelta(days=1)
     try:
         zone = TemperatureZone.objects.get(pk=num)
-        records = list(TemperatureRecord.objects.filter(zone=zone)[:3000].values_list("time", "temperature"))
+        records = list(TemperatureRecord.objects.filter(zone=zone, time__gte=this_time_yesterday).values_list("time",
+                                                                                                        "temperature"))
     except TemperatureZone.DoesNotExist:
         raise Http404
 
     return JsonResponse(records, safe=False, encoder=DatetimeEncoder)
-
 
 
 def temperature_chart_zones(request):
